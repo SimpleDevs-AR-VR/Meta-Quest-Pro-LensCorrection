@@ -156,7 +156,7 @@ python EstimateDistortion.py
 >````
 >ffmpeg -i DistortionTestLeft.mp4 -vf "lenscorrection=k2=0.2:k1=-0.5" -vsync 2 DistortionTestLeft_Corrected.mp4
 >````
->_... I forgot what this one did. I'm adding it for posterity though._
+>_The lens correction filter where `k2=0.2` and `k1=-0.5`, as an example._
 
 ## Overall Findings
 
@@ -166,3 +166,33 @@ Based on visual observation and testing, I feel confident that the following par
 * `k2: 0.3`
 
 ![k1=0.55, k2=0.3](./README/0.3_-0.55.png)
+
+---
+
+## Template Crops and Correction Parameters
+
+### -m1080
+
+**CROP**:
+
+````bash
+ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=530:568:15:0" -vsync 2 <OUTPUT_VIDEO_PATH>
+````
+
+where:
+
+* `out_w`: The width of the cropped area: `530`
+* `out_h`: The height of the cropped area: `568`
+* `x`: The x-coordinate of the topleft corner of the cropped area: `15`
+* `y`: The y-coordinate of the topleft corner of the cropped area: `0`
+
+**CORRECTION**:
+
+````bash
+ffmpeg -i <INPUT_VIDEO_PATH> -vf "lenscorrection=k2=0.3:k1=-0.55" -vsync 2 <OUTPUT_VIDEO_PATH>
+````
+
+where:
+
+* `k2`: `0.3`
+* `k1`: `-0.55`
