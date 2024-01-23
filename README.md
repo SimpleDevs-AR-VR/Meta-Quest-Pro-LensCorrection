@@ -196,3 +196,27 @@ where:
 
 * `k2`: `0.3`
 * `k1`: `-0.55`
+
+### -m1280
+
+````bash
+ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=628:672:18:0" -vsync 2 <OUTPUT_VIDEO_PATH>
+````
+
+where:
+
+* `out_w`: The width of the cropped area: `628`
+* `out_h`: The height of the cropped area: `672`
+* `x`: The x-coordinate of the topleft corner of the cropped area: `18`
+* `y`: The y-coordinate of the topleft corner of the cropped area: `0`
+
+**CORRECTION**:
+
+````bash
+ffmpeg -i <INPUT_VIDEO_PATH> -vf "lenscorrection=k2=0.3:k1=-0.55" -vsync 2 <OUTPUT_VIDEO_PATH>
+````
+
+where:
+
+* `k2`: `0.3`
+* `k1`: `-0.55`
