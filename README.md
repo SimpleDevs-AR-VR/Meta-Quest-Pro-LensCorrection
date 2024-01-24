@@ -16,6 +16,8 @@ We want to attempt to correct for this artificial distortion so that we can begi
 
 In addition, it's perhaps more optimal to attempt to look at only a singular eye rather than both eyes. Both eye perspectives are likely to contain similar visual information, and thus it will be simpler to crop the footage to focus on one eye prior to lens correction.
 
+Finally, because the footage is angled at a particular degree from the horizon (approximately 18 degrees), we need to fix that as well.
+
 ## Commands and Parameters
 
 If you've used [our method for eye footage capture using **scrcpy**](git@github.com:SimpleDevs-AR-VR/Meta-Quest-Pro-SCRCPY.git), you were provided two options to capture the footage: 
@@ -30,14 +32,16 @@ The full command to perform lens correction is (for the left eye):
 ### `-m1080`
 
 ````
-ffmpeg <file_location>.mp4 -vf "crop=530:568:15:0,lenscorrection=k1=0.3:k2=-0.55" -vsync 2 <output_file>.mp4
+ffmpeg <file_location>.mp4 -vf "crop=530:568:15:0,lenscorrection=k1=0.3:k2=-0.55,rotate=18*(PI/180)" -vsync 2 <output_file>.mp4
 ````
 
 ### `-m1280`
 
 ````
-ffmpeg <file_location>.mp4 -vf "crop=628:672:18:0,lenscorrection=k1=0.3:k2=-0.55" -vsync 2 <output_file>.mp4
+ffmpeg <file_location>.mp4 -vf "crop=628:672:18:0,lenscorrection=k1=0.3:k2=-0.55,rotate=18*(PI/180)" -vsync 2 <output_file>.mp4
 ````
+
+**NOTE:** Please ensure that you have `-vsync 2` included as an argument passed to the **ffmpeg** command, as this ensures that all video processing occurs quickly.
 
 ### Example Process
 
