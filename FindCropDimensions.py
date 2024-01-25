@@ -7,7 +7,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('source', help="The image to use.")
 parser.add_argument('-p', '--preview', default=False, help="Should we render the preview of the cutted image?")
-args = parser.parse_args();
+args = parser.parse_args()
 
 # Read the image in grayscale
 src_raw = cv2.imread(args.source)
@@ -36,11 +36,18 @@ results_filename = os.path.join(dirname,filename+".txt")
 # If the filename exists alreayd, delete it.
 if os.path.exists(results_filename):
     os.remove(results_filename)
+# Get the params
+out_x = src_shape[1] - new_min_x
+out_y = src_shape[0]
+out_x_half = round(out_x / 2)
 with open(results_filename, 'a') as file:
     file.write(f'Left_crop: {new_min_x}\n')
     file.write('Crop range:\n')
     file.write(f'\tX: {new_min_x} - {src_shape[1]}\n')
     file.write(f'\tY: 0 - {src_shape[0]}\n')
+    file.write('FFMPEG command filters:\n')
+    file.write(f"\tLEFT EYE: crop={out_x_half}:{out_y}:{new_min_x}:0\n")
+    file.write(f"\tRIGHT EYE: crop={out_x_half}:{out_y}:{new_min_x+out_x_half}:0\n")
     file.write(f'Cropped image shape: {np.shape(crop)}')
 
 print(f'For file "{args.source}":')
@@ -49,9 +56,12 @@ print('Crop range:')
 print(f'\tX: {new_min_x} - {src_shape[1]}')
 print(f'\tY: 0 - {src_shape[0]}')
 print(f'cropped image shape: {np.shape(crop)}')
+print('FFMPEG command filters:')
+print(f"\tLEFT EYE: crop={out_x_half}:{out_y}:{new_min_x}:0")
+print(f"\tRIGHT EYE: crop={out_x_half}:{out_y}:{new_min_x+out_x_half}:0")
 print(f'Results stored in "{results_filename}"')
-
-if (args.preview):
+    
+if args.preview:
     cv2.imshow("hello", crop)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

@@ -2,4 +2,7 @@ Left_crop: 16
 Crop range:
 	X: 16 - 1280
 	Y: 0 - 672
+FFMPEG command filters:
+	LEFT EYE: crop=632:672:16:0
+	RIGHT EYE: crop=632:672:648:0
 Cropped image shape: (672, 1264, 3)
