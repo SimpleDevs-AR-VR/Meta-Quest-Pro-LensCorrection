@@ -57,6 +57,26 @@ _Cropped, Distorted_
 ![Cropped, Corrected](./docs/results_3.png)
 _Cropped, Corrected_
 
+## Cropping Hyperparameters
+
+These were determined based on visual observation of the captured footage. The raw cropping parameters are provided below:
+
+````bash
+ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=out_x:out_y:x:y" -vsync 2 <OUTPUT_VIDEO_PATH>
+````
+
+* `out_w`: The width of the cropped area
+* `out_h`: The height of the cropped area
+* `x`: The x-coordinate of the topleft corner of the cropped area
+* `y`: The y-coordinate of the topleft corner of the cropped area
+
+_**NOTE**: Do NOT forget the `-vsync 2` flag, otherwise your code will take forever._
+
+|Format flag|Aspect Ratio|Left Eye|Right Eye|
+|:-|:-|:-|:-|
+|`-m1080`|1080 x 568|`out_x=534`<br>`out_y=568`<br>`x=12`<br>`y=0`|`out_x=534`<br>`out_y=568`<br>`x=546`<br>`y=0`|
+|`-m1280`|1280 x 672|`out_x=632`<br>`out_y=672`<br>`x=16`<br>`y=0`|`out_x=632`<br>`out_y=672`<br>`x=648`<br>`y=0`|
+
 ## Lens Correction Mathematics + Parameters
 
 The algorithm for lens correction:
@@ -74,40 +94,17 @@ Where:
 
 This is implemented through `ffmpeg`’s `lenscorrection` filter, which accepts a `cx`, `cy`, `k1`, and `k2` as hyperparameters.
 
+````bash
+ffmpeg -i <INPUT_VIDEO_PATH> -vf "lenscorrection=k1=<K1>:k2=<K2>" -vsync 2 <OUTPUT_VIDEO_PATH>
+````
+
+* `K1` and `K2`: The hyperparameters for correction.
+
+
 The two parameters `k1` and `k2` were determined based on visual observation and comparison of results derived using `EstimateDistortion.py`, which is provided alongside this repository. The optimal parameters based on this comparison are:
 
 * `k2`: `0.3`
 * `k1`: `-0.55`
-
-## Crop Parameters
-
-These were determined based on visual observation of the captured footage. The raw cropping parameters are provided below:
-
-### -m1080
-
-````bash
-ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=530:568:15:0" -vsync 2 <OUTPUT_VIDEO_PATH>
-````
-
-where:
-
-* `out_w`: The width of the cropped area: `530`
-* `out_h`: The height of the cropped area: `568`
-* `x`: The x-coordinate of the topleft corner of the cropped area: `15`
-* `y`: The y-coordinate of the topleft corner of the cropped area: `0`
-
-### -m1280
-
-````bash
-ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=628:672:18:0" -vsync 2 <OUTPUT_VIDEO_PATH>
-````
-
-where:
-
-* `out_w`: The width of the cropped area: `628`
-* `out_h`: The height of the cropped area: `672`
-* `x`: The x-coordinate of the topleft corner of the cropped area: `18`
-* `y`: The y-coordinate of the topleft corner of the cropped area: `0`
 
 ## Notes on Executable Python Scripts
 
