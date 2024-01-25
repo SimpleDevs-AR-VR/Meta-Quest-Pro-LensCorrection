@@ -1,0 +1,5 @@
+Left_crop: 16
+Crop range:
+	X: 16 - 1280
+	Y: 0 - 672
+Cropped image shape: (672, 1264, 3)
