@@ -159,15 +159,6 @@ The findings from this visualization are written and saved in `templates/correct
 
 Note that the parameters `cy`, `k2`, and `k1` are all the same. it's only `cx` that changes. This makes sense, as the only parameter that's likely to change is the x-coordinate considering that the left and right images are similar otherwise.
 
-### Legacy Correction Parameters
-
-The two parameters `k1` and `k2` were determined based on visual observation and comparison of results derived using an older version of `EstimateDistortion.py`. The older, deprecated code is still available in this python script, but this script is deprecated.
-
-If you want to use it, it's still available. But note that it'll perhaps run for a long time as it tries to estimate `k2` and `k1`. To make it run, you'll also need a template image - the original image rendered to the user in VR that is flat and straight. The script will attempt to use different parameters to estimate what `k2` and `k1` are, by determining which pair will lead to the closest number of lines as the number estimated from the original template image. The template image in question is provided in `template/DistorationTestGrid2.png`. THe optimal results were found below:
-
-* `k2`: `0.3`
-* `k1`: `-0.55`
-
 ## Combining All Correction Commands
 
 The combined list of commands **for `-m1280` videos** can be run as so:
@@ -183,6 +174,42 @@ ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=632:672:16:0,rotate=21*(PI/180),lenscorre
 ````bash
 ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=632:672:648:0,rotate=-21*(PI/180),lenscorrection=cx=0.43:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 <OUTPUT_VIDEO_PATH>
 ````
+
+## Example
+
+### Original:
+
+![Original Source - approx 6:15](./docs/example_original.png)
+
+### After Correction:
+
+**LEFT EYE:**
+
+````bash
+ffmpeg -i to_correct/2024-01-22_22-20-29_1705980029960.mp4 -vf "crop=632:672:16:0,rotate=21*(PI/180),lenscorrection=cx=0.57:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 to_correct/2024-01-22_22-20-29_1705980029960_left.mp4
+````
+
+**RIGHT EYE:**
+
+````bash
+ffmpeg -i to_correct/2024-01-22_22-20-29_1705980029960.mp4 -vf "crop=632:672:648:0,rotate=-21*(PI/180),lenscorrection=cx=0.43:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 to_correct/2024-01-22_22-20-29_1705980029960_right.mp
+````
+
+
+|Left|Right|
+|:-:|:-:|
+|![Left Eye - approx. 6:15](./docs/example_left.png)|![Right Eye - approx. 6:15](./docs/example_right.png)|
+
+---
+
+### Legacy Correction Parameters
+
+The two parameters `k1` and `k2` were determined based on visual observation and comparison of results derived using an older version of `EstimateDistortion.py`. The older, deprecated code is still available in this python script, but this script is deprecated.
+
+If you want to use it, it's still available. But note that it'll perhaps run for a long time as it tries to estimate `k2` and `k1`. To make it run, you'll also need a template image - the original image rendered to the user in VR that is flat and straight. The script will attempt to use different parameters to estimate what `k2` and `k1` are, by determining which pair will lead to the closest number of lines as the number estimated from the original template image. The template image in question is provided in `template/DistorationTestGrid2.png`. THe optimal results were found below:
+
+* `k2`: `0.3`
+* `k1`: `-0.55`
 
 ## Notes on Executable Python Scripts
 
