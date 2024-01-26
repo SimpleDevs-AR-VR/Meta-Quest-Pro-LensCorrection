@@ -54,7 +54,7 @@ ffmpeg -i <INPUT_VIDEO_FILE> -vf "crop=632:672:648:0,rotate=-21*(PI/180),lenscor
 
 To learn more about each process, please refer to the following documentation provided in `docs/`:
 
-* Cropping Parameters:
+* [**Cropping Parameters**](./docs/CROPPING.md)
 * Rotation Parameters:
 * Lens Correction Parameters: 
 
