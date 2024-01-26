@@ -12,52 +12,53 @@ We have two separate footage streams condensed into one single video, complete w
 
 ![Raw SCRCPY Capture](./docs/raw_scrcpy_capture.png)
 
-We want to attempt to correct for this artificial distortion so that we can begin to derive good footage of our AR/VR application in action. We can attempt to perform a kind of lens correction using FFMPEG. Similar to **scrcpy**, **ffmpeg** is a command-line tool that allows users to modify images, videos, audio, and other media-related content. Luckily, **ffmpeg** comes with a command to correct for lens distortion: literally `lenscorrection=k1=<FLOAT>:k2=<FLOAT>`. Let's use this to our advantage.
+We want to attempt to correct for this artificial distortion so that we can begin to derive good footage of our AR/VR application in action. We can attempt to perform a kind of lens correction using FFMPEG.
 
-In addition, it's perhaps more optimal to attempt to look at only a singular eye rather than both eyes. Both eye perspectives are likely to contain similar visual information, and thus it will be simpler to crop the footage to focus on one eye prior to lens correction.
+The necessary steps are the following:
 
-Finally, because the footage is angled at a particular degree from the horizon (approximately 18 degrees), we need to fix that as well.
+1. Crop the video so that left and right eye footage are separated into their own separate files.
+2. Rotate the images so that they are as close to horizontal as possible.
+3. Perform lens distortion correction to reduce the "fisheye" effect seen in the original footage for each eye.
 
 ## Commands and Parameters
 
-If you've used [our method for eye footage capture using **scrcpy**](git@github.com:SimpleDevs-AR-VR/Meta-Quest-Pro-SCRCPY.git), you were provided two options to capture the footage: 
-
-* `-m1080` : 1080 x 568
-* `-m1280` : 1280 x 672
-
-Of course, you are completely free to use whichever aspect ratio when recording via **scrcpy**. However, we'll focus on these two specific formats.
-
-The full command to perform lens correction is (for the left eye):
-
-### `-m1080`
-
-````
-ffmpeg <file_location>.mp4 -vf "crop=530:568:15:0,lenscorrection=k1=0.3:k2=-0.55,rotate=18*(PI/180)" -vsync 2 <output_file>.mp4
-````
-
-### `-m1280`
-
-````
-ffmpeg <file_location>.mp4 -vf "crop=628:672:18:0,lenscorrection=k1=0.3:k2=-0.55,rotate=18*(PI/180)" -vsync 2 <output_file>.mp4
-````
+**NOTE:** This is explicitly with regard to when recording with `m1280` when recordign with **scrcpy**.
 
 **NOTE:** Please ensure that you have `-vsync 2` included as an argument passed to the **ffmpeg** command, as this ensures that all video processing occurs quickly.
 
-### Example Process
+### LEFT EYE
 
-1. Capture the raw footage using SCRCPY.
-![Raw Capture](./docs/results_1.png)
-_Original Raw Footage_
+````bash
+ffmpeg -i <INPUT_VIDEO_FILE> -vf "crop=632:672:16:0,rotate=21*(PI/180),lenscorrection=cx=0.57:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 <OUTPUT_VIDEO_FILE>.mp4
+````
 
-2. Isolate the image to a single eye view.
-![Cropped, Distorted](./docs/results_2.png)
-_Cropped, Distorted_
+### RIGHT EYE
 
-3. Reverse the artificial lens distortion to "straighten" the image or video.
-![Cropped, Corrected](./docs/results_3.png)
-_Cropped, Corrected_
+````bash
+ffmpeg -i <INPUT_VIDEO_FILE> -vf "crop=632:672:648:0,rotate=-21*(PI/180),lenscorrection=cx=0.43:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 <OUTPUT_VIDEO_FILE>.mp
+````
 
-## Cropping Hyperparameters
+## Example
+
+### Original:
+
+![Original Source - approx 6:15](./docs/example_original.png)
+
+### After Correction:
+
+|Left|Right|
+|:-:|:-:|
+|![Left Eye - approx. 6:15](./docs/example_left.png)|![Right Eye - approx. 6:15](./docs/example_right.png)|
+
+## Parameters for Correction
+
+To learn more about each process, please refer to the following documentation provided in `docs/`:
+
+* Cropping Parameters:
+* Rotation Parameters:
+* Lens Correction Parameters: 
+
+### Cropping Hyperparameters
 
 Cropping parameters were determined based on the following process:
 
@@ -66,18 +67,31 @@ Cropping parameters were determined based on the following process:
 3. Crop the footage such that the extraneous padding to the left is removed.
 4. Calculate the window size of each eye by cropping the altered frame half vertically. Both left and right crops should be equivalent in width and height, as a result.
 
-This can be calculated for ANY aspect ratio raw footage capture from SCRCPY and the Meta Quest Pro. This can be tested by running the python script `FindCropDimensions.py`, which accepts two arguments:
+This can be calculated for ANY aspect ratio raw footage capture from SCRCPY and the Meta Quest Pro. This can be tested by running the python script `src/FindCropDimensions.py`, which accepts two arguments:
 
 |Command Flag|Argument Type|Value Type|Description|
 |:-|:-|:-|:-|
-|`source`|positional|`str`|Indicate the relative filepath to an image that must be cropped.|
+|`source`|positional|`str`|Indicate the relative filepath to an **image** that must be cropped.|
 |`-p`, `--preview`|optional|`bool`|Tell the script if you wish to preview the crop prior to splitting between left and right eye views|
 
 An example command would be:
 
 ````bash
-python FindCropDimensions.py template/template.png -p True
+python src/FindCropDimensions.py <input_image>.png -p True
 ````
+
+|Format flag|Aspect Ratio|Extra Leftside Padding|Eye Cam Width|Left Eye|Right Eye|
+|:-|:-|:-|:-|:-|:-|
+|`-m1080`|1080 x 568|?|?|`out_x=534`<br>`out_y=568`<br>`x=12`<br>`y=0`|`out_x=534`<br>`out_y=568`<br>`x=546`<br>`y=0`|
+|`-m1280`|1280 x 672|16px|632px|`out_x=632`<br>`out_y=672`<br>`x=16`<br>`y=0`|`out_x=632`<br>`out_y=672`<br>`x=648`<br>`y=0`|
+
+
+If you do not have an image but rather a vehicle, you can get an aspect ratio-accurate frame from your video using the `src/GetScreenshotFromVideo.py` script, which has 2 required arguments:
+
+|Command Flag|Argument Type|Value Type|Description|
+|:-|:-|:-|:-|
+|`source`|positonal|`str`|The movie or video file that you want to get a screenshot from|
+|`timestamp`|positional|`int`|At what explicit second do you want to get the screenshot from? MUST be in seconds - for example, a timestamp of `00:01:30` must be typed as `90`.|
 
 This script uses the **ffmpeg** package for the final cropping. An example of the command and its arguments is as follows:
 
@@ -93,15 +107,6 @@ ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=out_x:out_y:x:y" -vsync 2 <OUTPUT_VIDEO_P
 _**NOTE**: Do NOT forget the `-vsync 2` flag, otherwise your code will take forever._
 
 You can use either `FindCropDimensions.py` or **ffmpeg** to do the cropping for you.
-
-### Cropping Presets
-
-|Format flag|Aspect Ratio|Extra Leftside Padding|Eye Cam Width|Left Eye|Right Eye|
-|:-|:-|:-|:-|:-|:-|
-|`-m1080`|1080 x 568|?|?|`out_x=534`<br>`out_y=568`<br>`x=12`<br>`y=0`|`out_x=534`<br>`out_y=568`<br>`x=546`<br>`y=0`|
-|`-m1280`|1280 x 672|16px|632px|`out_x=632`<br>`out_y=672`<br>`x=16`<br>`y=0`|`out_x=632`<br>`out_y=672`<br>`x=648`<br>`y=0`|
-
-These cropping parameters are provided in `template/template.txt`.
 
 ## Rotation Parameters
 
@@ -174,31 +179,6 @@ ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=632:672:16:0,rotate=21*(PI/180),lenscorre
 ````bash
 ffmpeg -i <INPUT_VIDEO_PATH> -vf "crop=632:672:648:0,rotate=-21*(PI/180),lenscorrection=cx=0.43:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 <OUTPUT_VIDEO_PATH>
 ````
-
-## Example
-
-### Original:
-
-![Original Source - approx 6:15](./docs/example_original.png)
-
-### After Correction:
-
-**LEFT EYE:**
-
-````bash
-ffmpeg -i to_correct/2024-01-22_22-20-29_1705980029960.mp4 -vf "crop=632:672:16:0,rotate=21*(PI/180),lenscorrection=cx=0.57:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 to_correct/2024-01-22_22-20-29_1705980029960_left.mp4
-````
-
-**RIGHT EYE:**
-
-````bash
-ffmpeg -i to_correct/2024-01-22_22-20-29_1705980029960.mp4 -vf "crop=632:672:648:0,rotate=-21*(PI/180),lenscorrection=cx=0.43:cy=0.51:k1=-0.48:k2=0.2" -vsync 2 to_correct/2024-01-22_22-20-29_1705980029960_right.mp
-````
-
-
-|Left|Right|
-|:-:|:-:|
-|![Left Eye - approx. 6:15](./docs/example_left.png)|![Right Eye - approx. 6:15](./docs/example_right.png)|
 
 ---
 
