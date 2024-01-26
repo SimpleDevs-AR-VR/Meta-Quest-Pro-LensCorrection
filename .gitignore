@@ -1,4 +1,5 @@
 **/*.DS_Store
 estimate_distortion_runs/*
 *.mp4
-**/*_ignore
+**/*_ignore/
+
