@@ -1,0 +1,50 @@
+{
+    "vr_anchors_positions": {
+        "center": [
+            792.0,
+            720.0
+        ],
+        "topleft": [
+            934.9938,
+            434.0125
+        ],
+        "topright": [
+            934.9938,
+            1005.987
+        ],
+        "bottomleft": [
+            649.0062,
+            434.0125
+        ]
+    },
+    "img_anchors_positions": {
+        "center": [
+            362.5,
+            306.0
+        ],
+        "topleft": [
+            182.0,
+            216.0
+        ],
+        "topright": [
+            543.0,
+            216.0
+        ],
+        "bottomleft": [
+            188.0,
+            393.5
+        ]
+    },
+    "vr": {
+        "width": 571.9745,
+        "height": 285.98759999999993,
+        "width_half": 285.98725,
+        "height_half": 142.99379999999996
+    },
+    "img": {
+        "width": 361.0,
+        "height": 177.6013794991469,
+        "width_half": 180.5,
+        "height_half": 88.80068974957345
+    }
+}
