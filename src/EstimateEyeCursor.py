@@ -73,7 +73,7 @@ with open(csv_outfile, 'w') as csvfile:
                 # we only update the csv if the eye position is new
                 csvwriter.writerow([ts, frame_counter, eye_pos[0], eye_pos[1]])
             if eye_pos is not None:
-                result = cv2.drawMarker(result, eye_pos, (0,255,255), cv2.MARKER_CROSS, 20, 2)
+                result = cv2.drawMarker(result, eye_pos, (255,0,0), cv2.MARKER_CROSS, 20, 2)
             out.write(result)
             prev_timestamp = ts
         else:

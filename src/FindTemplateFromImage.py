@@ -73,7 +73,14 @@ def main(args):
     img = cv2.imread(args.source)
     img_h, img_w, _ = img.shape
     min_dim = min(img_h, img_w)
-    mean_center, median_center, result = FindTemplateMatch(img, args.template, thresh=args.threshold, draw_centers=True, verbose=True)
+    mean_center, median_center, result = FindTemplateMatch(
+        img, 
+        args.template, 
+        thresh=args.threshold, 
+        draw_bbox=False, 
+        draw_centers=True, 
+        verbose=True
+    )
     cv2.imshow('Template Match', result)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

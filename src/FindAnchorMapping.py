@@ -1,30 +1,42 @@
+import os
 import numpy as np
 import pandas as pd
 import FindTemplateFromImage as FT
 import cv2
-import math 
 import json
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('capture',help="The relative path to the raw SCRCPY capture")
-parser.add_argument('events',help='The relative path to the CVS file that captured events in the VR simulation')
-parser.add_argument('outfile',help='The JSON file where to output the results')
+parser.add_argument('root',help='The root directory to an AM session')
+parser.add_argument('template',help="The relative path to the template image for the anchor points.")
+parser.add_argument('outfile',help='The name of the JSON file where to output the results')
 args = parser.parse_args()
 
-# raw data
-_TEMPLATES = {
-    'center':'./template/Center.png',
-    'topleft':'./template/TopLeft.png',
-    'topright':'./template/TopRight.png',
-    'bottomleft':'./template/BottomLeft.png'
-}
-_REF_FRAME = cv2.imread(args.capture)
-_REF_HEIGHT, _REF_WIDTH, _ = _REF_FRAME.shape
-print(_REF_HEIGHT, _REF_WIDTH)
-_EVENTS_DF = pd.read_csv(args.events)
+"""
+The Root Directory (args.root) should contain the following files:
+- center.png
+- topleft.png
+- topright.png
+- bottomleft.png
+- vr.csv
+We need to check if these files are present
+"""
 
-# Step 1: Parse the events data from the VR simulation, get the equivalent in WorldToScreenPoint coords
+_EXTRACTED_FRAMES = {
+    'center':cv2.imread(os.path.join(args.root, 'center.png')),
+    'topleft':cv2.imread(os.path.join(args.root, 'topleft.png')),
+    'topright':cv2.imread(os.path.join(args.root, 'topright.png')),
+    'bottomleft':cv2.imread(os.path.join(args.root, 'bottomleft.png'))
+}
+_REF_HEIGHT, _REF_WIDTH, _ = _EXTRACTED_FRAMES['center'].shape
+print("SCRCPY LEFT EYE CAPTURE SIZE: ", _REF_HEIGHT, _REF_WIDTH)
+
+
+"""
+We need to get the anchor positions from the `vr.csv` file, which should give us the screen point scale of each anchor point, as seen by the left eye camera
+"""
+
+_EVENTS_DF = pd.read_csv(os.path.join(args.root, 'vr.csv'))
 cam_rows = _EVENTS_DF[
     (_EVENTS_DF['event_type'] == "Anchor") 
     & (_EVENTS_DF['title'] == "Left")
@@ -33,19 +45,38 @@ cam_center = cam_rows[cam_rows['description'] == "Center"].values[0]
 cam_topleft = cam_rows[cam_rows['description'] == "Top Left"].values[0]
 cam_topright = cam_rows[cam_rows['description'] == "Top Right"].values[0]
 cam_bottomleft = cam_rows[cam_rows['description'] == "Bottom Left"].values[0]
-print(cam_center)
 # Note that the origin is on the bottom left
 _VR_ANCHOR_POSITIONS = {
-    'center':{'x':cam_center[4],'y':cam_center[5],'coords':[cam_center[4],cam_center[5]]},
-    'topleft':{'x':cam_topleft[4],'y':cam_topleft[5],'coords':[cam_topleft[4],cam_topleft[5]]},
-    'topright':{'x':cam_topright[4],'y':cam_topright[5],'coords':[cam_topright[4],cam_topright[5]]},
-    'bottomleft':{'x':cam_bottomleft[4],'y':cam_bottomleft[5],'coords':[cam_bottomleft[4],cam_bottomleft[5]]}
+    'center':{
+        'x':cam_center[4],
+        'y':cam_center[5],
+        'coords':[cam_center[4],cam_center[5]]
+    },
+    'topleft':{
+        'x':cam_topleft[4],
+        'y':cam_topleft[5],
+        'coords':[cam_topleft[4],cam_topleft[5]]
+    },
+    'topright':{
+        'x':cam_topright[4],
+        'y':cam_topright[5],
+        'coords':[cam_topright[4],cam_topright[5]]
+    },
+    'bottomleft':{
+        'x':cam_bottomleft[4],
+        'y':cam_bottomleft[5],
+        'coords':[cam_bottomleft[4],cam_bottomleft[5]]
+    }
 }
 
-# Step 2: calculate the image positions of each template
+"""
+We now need to calculate the image positions of each reference image extracted from our SCRCPY image
+Note that we do an additional subtraction where we subtract the height from the predicted center.
+This is because we need to change the detected y-axis position to be relative to the bottom left, as opposed to the top left.
+"""
 _IMAGE_ANCHOR_POSITIONS = {}
-for key, value in _TEMPLATES.items():
-    mean_center, median_center = FT.FindTemplateMatch(_REF_FRAME, value, thresh=0.975)
+for key, value in _EXTRACTED_FRAMES.items():
+    mean_center, median_center = FT.FindTemplateMatch(value, args.template, thresh=0.975)
     # Note that the coordinates are provided in (x,y) format, with respect to the origin being on the topleft corner
     # We need to remap these coordinates to be relative to the bottom left instead
     new_y = _REF_HEIGHT - median_center[1]
@@ -59,7 +90,8 @@ for key, value in _TEMPLATES.items():
 print("FROM VR:", _VR_ANCHOR_POSITIONS)
 print("FROM CV2:", _IMAGE_ANCHOR_POSITIONS)
 
-# Step 3: Swet up system of equations
+# Step 3: Set up system of equations
+# Step 3a: 10m calculations
 vr_coords = np.array([
     _VR_ANCHOR_POSITIONS['center']['coords'],
     _VR_ANCHOR_POSITIONS['topleft']['coords'],
@@ -83,50 +115,20 @@ print(x)
 # In other words, `x` is the transformation matrix. It will be a 3x2 matrix
 # All that needs to be done beforehand is to create `A`.
 # The transformation results in Ax => (nx3)(3x2) where `n` is the number of coordinates you want to transform
-print(np.dot(A,x))
+#print(np.dot(A_10m,x_10m))
 
-"""
-# Step 3: Calculate width and height of the original VR and of the CV2
-# Remember that all coordinates are in (y,x).
-# To get width, find difference between values of index 1
-# to get height, find difference between values of index 0
-_VR_WIDTH = math.dist(_VR_ANCHOR_POSITIONS['topright']['coords'], _VR_ANCHOR_POSITIONS['topleft']['coords'])
-_VR_HEIGHT = math.dist(_VR_ANCHOR_POSITIONS['bottomleft']['coords'], _VR_ANCHOR_POSITIONS['topleft']['coords'])
-_IMG_WIDTH = math.dist(_IMAGE_ANCHOR_POSITIONS['topright']['coords'], _IMAGE_ANCHOR_POSITIONS['topleft']['coords'])
-_IMG_HEIGHT = math.dist(_IMAGE_ANCHOR_POSITIONS['bottomleft']['coords'], _IMAGE_ANCHOR_POSITIONS['topleft']['coords'])
-print(f"VR WIDTH AND HEIGHT: w={_VR_WIDTH} ; h={_VR_HEIGHT}")
-print(f"IMG WIDTH AND HEIGHT: w={_IMG_WIDTH} ; h={_IMG_HEIGHT}")
+# Now, we can calculate the estimated transformation from vr to img coordinates using np.dot
+# In other words, `x` is the transformation matrix. It will be a 3x2 matrix
+# All that needs to be done beforehand is to create `A`.
+# The transformation results in Ax => (nx3)(3x2) where `n` is the number of coordinates you want to transform
+#print(np.dot(A_10m,x_10m))
 
-# Step 4: Calcualte the halves of these
-_VR_WIDTH_HALF = _VR_WIDTH / 2.0
-_VR_HEIGHT_HALF = _VR_HEIGHT / 2.0
-_IMG_WIDTH_HALF = _IMG_WIDTH / 2.0
-_IMG_HEIGHT_HALF = _IMG_HEIGHT / 2.0
-
-# Step 5: Save Results
 output = {
     'vr_anchors_positions':_VR_ANCHOR_POSITIONS,
     'img_anchors_positions':_IMAGE_ANCHOR_POSITIONS,
-    'vr':{
-        'width':_VR_WIDTH,
-        'height':_VR_HEIGHT,
-        'width_half':_VR_WIDTH_HALF,
-        'height_half':_VR_HEIGHT_HALF
-    },
-    'img':{
-        'width':_IMG_WIDTH,
-        'height':_IMG_HEIGHT,
-        'width_half':_IMG_WIDTH_HALF,
-        'height_half':_IMG_HEIGHT_HALF
-    }
+    'transformation_matrix':x.tolist(),
 }
-"""
-output = {
-    'vr_anchors_positions':_VR_ANCHOR_POSITIONS,
-    'img_anchors_positions':_IMAGE_ANCHOR_POSITIONS,
-    'transformation_matrix':x.tolist()
-}
-with open(args.outfile, "w") as outfile: 
+with open(os.path.join(args.root, args.outfile), "w") as outfile: 
     json.dump(output, outfile, indent=4)
 
 """
@@ -145,7 +147,6 @@ The formula is such that:
     (cursor.ratio * (img_height_half, img_width_half)) + correctedcenter
 
 (noting that positions are in (y,x) format due to OpenCV)
-"""
 
 world = np.array([
     [0,0,0],
@@ -170,3 +171,4 @@ x, res, rank, s = np.linalg.lstsq(A, camera, rcond=None)
 
 #test results
 print(np.dot(A,x))
+"""
