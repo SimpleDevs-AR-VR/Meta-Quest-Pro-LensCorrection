@@ -1,2 +1,4 @@
 opencv-python
 pandas
+moviepy
+matplotlib
