@@ -19,9 +19,10 @@ def ExtractTimestamps(input_vid, save_fig=False, verbose=False):
         print(f"Video to Process: {input_vid}")
         print("====================")
 
-    cmd_str = f"ffprobe -loglevel error -select_streams v:0 -show_entries packet=pts_time,flags -of json {args.input}"
+    cmd_str = f"ffprobe -loglevel error -select_streams v:0 -show_entries packet=pts_time,flags -of json {input_vid}"
     output = json.loads(subprocess.check_output(cmd_str, shell=True).decode('utf-8'))
     output_timestamps = [float(packet['pts_time']) for packet in output['packets']]
+    output_timestamps = sorted(output_timestamps)
     timestamp_deltas = [output_timestamps[i]-output_timestamps[i-1] for i in range(1, len(output_timestamps))]
     timestamp_deltas.insert(0, 0.0)
     csv_outfile = os.path.join(output_dir, "frame_timestamps.csv")
