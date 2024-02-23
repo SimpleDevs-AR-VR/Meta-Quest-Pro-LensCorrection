@@ -6,7 +6,7 @@ import cv2
 import csv
 import matplotlib.pyplot as plt
 
-def ExtractTimestamps(input_vid, save_fig=False, verbose=False):
+def ExtractTimestamps(input_vid, offset_ts=0.0, save_fig=False, verbose=False):
     input_dir = os.path.dirname(input_vid)
     input_basename = os.path.splitext(os.path.basename(input_vid))[0]
     output_dir = os.path.join(input_dir, input_basename+"_timestamps") if save_fig else input_dir
@@ -21,7 +21,7 @@ def ExtractTimestamps(input_vid, save_fig=False, verbose=False):
 
     cmd_str = f"ffprobe -loglevel error -select_streams v:0 -show_entries packet=pts_time,flags -of json {input_vid}"
     output = json.loads(subprocess.check_output(cmd_str, shell=True).decode('utf-8'))
-    output_timestamps = [float(packet['pts_time']) for packet in output['packets']]
+    output_timestamps = [float(packet['pts_time']) - offset_ts for packet in output['packets']]
     output_timestamps = sorted(output_timestamps)
     timestamp_deltas = [output_timestamps[i]-output_timestamps[i-1] for i in range(1, len(output_timestamps))]
     timestamp_deltas.insert(0, 0.0)
