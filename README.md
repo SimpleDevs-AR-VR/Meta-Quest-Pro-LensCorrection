@@ -103,7 +103,7 @@ If you need to generate your own mappings (i.e. you used your own unique anchors
 
 Once you have your `mappings.json` (or whatever you named it as), you should be able to estimate the eye position in the captured footage based on `vr.csv`. You can do this by executing the following command:
 
-````bash`
+````bash
 python src/EstimateEyeCursor [source_footage] [outfile_filename] [mapping file] [vr.csv] [start_timestamp (sec)]
 ````
 

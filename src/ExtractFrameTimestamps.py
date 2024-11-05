@@ -52,6 +52,10 @@ def ExtractTimestamps(input_vid, offset_ts=0.0, save_fig=False, verbose=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('input', help='the relative path to the video in question')
+    parser.add_argument('-o', '--offset', 
+                        help='If needed, an offset timestamp (in seconds) after the video starts',
+                        type=float,
+                        default=0.0)
     parser.add_argument('-sf', '--save_fig', 
                         help="Should we store a figure of all the frame-to-frame time deltas too?", 
                         action="store_true")
@@ -59,7 +63,7 @@ if __name__ == "__main__":
                         help="Should we print statements verbosely?",
                         action="store_true")
     args = parser.parse_args()
-    output_file = ExtractTimestamps(args.input, args.save_fig, args.verbose)
+    output_file = ExtractTimestamps(args.input, offset_ts=args.offset, save_fig=args.save_fig, verbose=args.verbose)
     print(f"Timestamps saved as: {output_file}")
 
 
