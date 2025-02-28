@@ -11,7 +11,8 @@ def EstimateCursor(
         source_filepath, 
         events_filepath, 
         mapping_filepath, 
-        frame_timestamps_filepath
+        frame_timestamps_filepath,
+        right_eye=False
             ):
     # Note: `sim_start_ts` is expected to be in unix seconds
 
@@ -25,6 +26,12 @@ def EstimateCursor(
         A = np.array(input + [1])
         return np.dot(A,transformation_matrix)
 
+    # Check which eye we want to render. We default to the left eye. We only check right if we intend to do so.
+    if not right_eye:
+        query_title = "Left"
+    else: 
+        query_title = "Right"
+
     # Read the events data
     events_df = pd.read_csv(events_filepath)
     events_start = events_df.iloc[1]['unix_ms']
@@ -32,7 +39,7 @@ def EstimateCursor(
     eye_df = events_df[
         (events_df['event_type'] == 'Eye Tracking') 
         & (events_df['description'] == 'Screen Position')
-        & (events_df['title'] == 'Left')
+        & (events_df['title'] == query_title)
     ]
     eye_df['unix_rel'] = eye_df['unix_ms'].apply(lambda x: (x-events_start)/1000)
 
@@ -133,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('events',help='The CSV file generated from the vr simulation that contains eye positions')
     parser.add_argument('mapping',help='The mapping data that contains estimations of anchor positions')    
     parser.add_argument('frame_timestamps',help='The CSV file that contains the timestamps of each frame')
+    parser.add_argument('-re', '--right_eye', help="Is this the right eye?", action='store_true') # if not stated, defaults to False
     args = parser.parse_args()
 
-    EstimateCursor(args.source, args.events, args.mapping, args.frame_timestamps)
+    EstimateCursor(args.source, args.events, args.mapping, args.frame_timestamps, args.right_eye)

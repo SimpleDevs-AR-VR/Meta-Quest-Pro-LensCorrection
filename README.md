@@ -15,7 +15,7 @@ We can do this with the following script: `src/ExtractFrameTimestamps.py`. This 
 The necessary command to execute the script is thus:
 
 ````bash
-python src/ExtractFrameTimestamps.py <path/to/raw/footage.mp4>
+python src/ExtractFrameTimestamps.py <path/to/raw/footage.mp4> -of <OFFSET (sec)>
 ````
 
 The output will be saved in a folder in he same relative directory as the raw footage file, with the folder name set as "<original_filename>_timestamps/". The outputted files are:
@@ -104,7 +104,10 @@ If you need to generate your own mappings (i.e. you used your own unique anchors
 Once you have your `mappings.json` (or whatever you named it as), you should be able to estimate the eye position in the captured footage based on `vr.csv`. You can do this by executing the following command:
 
 ````bash
-python src/EstimateEyeCursor [source_footage] [outfile_filename] [mapping file] [vr.csv] [start_timestamp (sec)]
+python src/EstimateEyeCursor [source_footage (video)] [VR events (csv)] [mapping file (json)] [timeframe file (csv)] -re [Is this the right eye? Defaults to left eye if not called]
+
+## Example
+python src/EstimateEyeCursor.py ./sample/left.mp4 ./sample/10-31-35.csv ./template/mappings/a50-e50.json ./sample/frame_timestamps.csv
 ````
 
 This will, if given the proper parameters, will successfully overlay the cursor on top of the original footage.
