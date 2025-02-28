@@ -4,6 +4,8 @@ _A miniature project to find a way to correct the artificial lens distortion gen
 
 This project assumes you have collected raw screen footage from a Meta Quest Pro or other Android-based head-mounted display (HMD) virtual/augmented reality headset. If not, we have a toolkit offered [here for the Meta Quest Pro](git@github.com:SimpleDevs-AR-VR/Meta-Quest-Pro-SCRCPY.git).
 
+If you have a Quest Pro but don't have to toolset to track the eyes, we have provided a repository containing a Unity project that'll get you started: [https://github.com/SimpleDevs-AR-VR/PassthroughData.git](https://github.com/SimpleDevs-AR-VR/PassthroughData.git). Just make sure to use the `main` branch!
+
 [![Watch the video](./docs/captured_footage.png)](https://youtu.be/zhfMPfGJFuc)
 
 ## Extracting Frame Timestamps
