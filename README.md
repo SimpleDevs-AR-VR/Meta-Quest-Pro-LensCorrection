@@ -80,8 +80,8 @@ Once you have your `mappings.json` (or whatever you named it as), you should be 
 ````bash
 python src/EstimateEyeCursor2.py [source_footage (video)] [VR events (csv)] [mapping file (json)] [output directory] -ofs [Offset from the beginning, in seconds] -outf [Output filename of the generated video]
 
-## Example
-python src/EstimateEyeCursor2.py ./sample2/left.mp4 ./sample2/events.csv ./template/mappings/a50-e50.json ./sample2/outputs/ -ofs 13.0
+## Example w/ no output filename
+python src/EstimateEyeCursor2.py ./sample3/left.mp4 ./sample3/eeg_events.csv ./template/mappings/a50-e50.json ./sample3/outputs/ -ofs 15.0
 ````
 
 This will, if given the proper parameters, will successfully overlay the cursor on top of the original footage.
