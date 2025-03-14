@@ -25,6 +25,17 @@ Note that the eye tracking CSV data from unity contains the following columns:
 - screen_pos_y <-- Y
 - screen_pos_z
 - target_name
+- Theta_AF7
+_ Alpha_AF7
+- ...
+- Gamma_AF7
+- Theta-AF8
+- ... 
+- Rel_Theta_AF7
+- ...
+- Rel_Theta_AF8
+- ...
+Relative values are between 0 and 100.
 """""""""""""""
 
 import numpy as np
@@ -42,6 +53,12 @@ import argparse
 # This needs to be run only one, in order to load the model into memory.
 # We are telling it to run on the english language.
 reader = easyocr.Reader(['en'])
+
+FBANDS = ['Theta', 'Alpha', 'Beta', 'Gamma']
+ECHANNELS = ['AF7', 'AF8']
+FCOLORS = [(0,0,255), (255,0,0), (0,255,0), (0,165,255)]
+FPOSITIONS = [50, 75, 100, 125]
+FHEIGHT = 25
 
 # Helper function: is this an Integer?
 def check_int(s:str):
@@ -72,7 +89,8 @@ def EstimateCursor(
             print("Failed to delete %s. Reason: %s" % (filepath, e))
     if video_output_filename is None or len(video_output_filename)==0:
         video_output_filename = os.path.splitext(os.path.basename(video_filepath))[0]
-    vid_outpath = os.path.join(output_dir, video_output_filename+'.avi')
+    vid_eye_outpath = os.path.join(output_dir, video_output_filename+'_eye.avi')
+    vid_eeg_outpath = os.path.join(output_dir, video_output_filename+'_eeg.avi')
 
     # Initialize mappings json, and get the transformation matrices
     with open(mapping_filepath) as jsonfile:
@@ -94,10 +112,13 @@ def EstimateCursor(
     vidcapw  = int(vidcap.get(cv.CAP_PROP_FRAME_WIDTH))   # float `width`
     vidcaph = int(vidcap.get(cv.CAP_PROP_FRAME_HEIGHT))   # float `height`
     vidcapfps = int(vidcap.get(cv.CAP_PROP_FPS))          # FPS
-    out = cv.VideoWriter(vid_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
+    out_eye = cv.VideoWriter(vid_eye_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
+    out_eeg = cv.VideoWriter(vid_eeg_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
     success, image = vidcap.read()
     count = 0
     offset_frames = vidcapfps * offset_seconds
+    vidcaphalfW = int(vidcapw/2)
+    font = cv.FONT_HERSHEY_SIMPLEX
 
     # Loop!
     while success:
@@ -106,6 +127,7 @@ def EstimateCursor(
 
             # Make a copy of the frame
             result = np.copy(image)
+            result_eeg = np.copy(image)
 
             # Attempt to grayscale and apply threshold for easier frame processing
             gry = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
@@ -125,14 +147,51 @@ def EstimateCursor(
                             eye_pos_est = transform([row['screen_pos_x'], row['screen_pos_y']])
                             eye_pos = (int(eye_pos_est[0]), int(vidcaph-eye_pos_est[1])) # flip the Y
                             #result = cv.drawMarker(result, eye_pos, (255,0,0), cv.MARKER_CROSS, 20, 2)
+                            # Print a rectangle to represent the estimated eye cursor
                             result = cv.rectangle(
                                 result,
                                 (eye_pos[0] - 10, eye_pos[1] - 10),
                                 (eye_pos[0] + 10, eye_pos[1] + 10),
                                 (255,0,0), 3)
+                            result_eeg = cv.rectangle(
+                                result_eeg,
+                                (eye_pos[0] - 10, eye_pos[1] - 10),
+                                (eye_pos[0] + 10, eye_pos[1] + 10),
+                                (255,0,0), 3)
+                            
+                            # Print the Rel_AF7 and Rel_AF8, in a copy of result
+                            for i in range(len(FBANDS)):
+                                color = FCOLORS[i]
+                                toppoint = vidcaph - FPOSITIONS[i]
+
+                                # Frequency band
+                                result_eeg = cv.putText(
+                                    result_eeg, FBANDS[i], (vidcaphalfW-60, toppoint + FHEIGHT),
+                                    font, 1, color, 2, cv.LINE_AA)
+
+                                for j in range(len(ECHANNELS)):
+                                    colname = f"Rel_{FBANDS[i]}_{ECHANNELS[j]}"
+                                    v = row[colname]
+
+                                    if j % 2 == 0:
+                                        # Even Number = Right Side
+                                        result_eeg = cv.rectangle(
+                                            result_eeg,
+                                            (vidcaphalfW+70, toppoint),
+                                            (vidcaphalfW+v+70, toppoint+FHEIGHT),
+                                            color, -1)
+                                    else:
+                                        # Odd Number = Left Side
+                                        result_eeg = cv.rectangle(
+                                            result_eeg,
+                                            (vidcaphalfW-v-70, toppoint),
+                                            (vidcaphalfW-70, toppoint+FHEIGHT),
+                                            color, -1)
+                                        
 
             # Write the final frame to the output video
-            out.write(result)
+            out_eye.write(result)
+            out_eeg.write(result_eeg)
 
         # Get the next frame
         success, image = vidcap.read()
@@ -140,7 +199,8 @@ def EstimateCursor(
 
     # Finally, close the video capture and output
     vidcap.release()
-    out.release()
+    out_eye.release()
+    out_eeg.release()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
