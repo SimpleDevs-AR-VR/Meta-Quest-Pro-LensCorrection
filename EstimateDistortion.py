@@ -155,7 +155,14 @@ for k1 in np.arange(-1.0,1.0,0.01):
             output_filename = "{}{}_{}.png".format(_RESULTS_DIR,_k2,_k1)
             output_lines, output_img = GetLinesFromImage(corrected_filepath)
             results.append([len(output_lines), output_filename, output_img])
-            os.remove(corrected_filepath)
+            #os.remove(corrected_filepath)
+        
+        # If the total number of files in results exceeds a threshold (ex. 200),
+        # We sort pre-emptively and only get the first 100.
+        if len(results) >= 200:
+            print("Results excceeded 200. Culling...");
+            results.sort( key = lambda x: abs(x[0]-n_template))
+            results = results[:100]
 
 # Finally... let's check which images are similar to our template in terms of line number
 # We'll do this by sorting 
