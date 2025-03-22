@@ -74,6 +74,7 @@ def EstimateCursor(
         output_dir:str,
 
         offset_seconds:float = 0,
+        include_eeg:bool = False,
         video_output_filename:str = 'output',
         csv_output_filename:str = 'frames'):    
 
@@ -160,33 +161,34 @@ def EstimateCursor(
                                 (255,0,0), 3)
                             
                             # Print the Rel_AF7 and Rel_AF8, in a copy of result
-                            for i in range(len(FBANDS)):
-                                color = FCOLORS[i]
-                                toppoint = vidcaph - FPOSITIONS[i]
+                            if include_eeg:
+                                for i in range(len(FBANDS)):
+                                    color = FCOLORS[i]
+                                    toppoint = vidcaph - FPOSITIONS[i]
 
-                                # Frequency band
-                                result_eeg = cv.putText(
-                                    result_eeg, FBANDS[i], (vidcaphalfW-60, toppoint + FHEIGHT),
-                                    font, 1, color, 2, cv.LINE_AA)
+                                    # Frequency band
+                                    result_eeg = cv.putText(
+                                        result_eeg, FBANDS[i], (vidcaphalfW-60, toppoint + FHEIGHT),
+                                        font, 1, color, 2, cv.LINE_AA)
 
-                                for j in range(len(ECHANNELS)):
-                                    colname = f"Rel_{FBANDS[i]}_{ECHANNELS[j]}"
-                                    v = row[colname]
+                                    for j in range(len(ECHANNELS)):
+                                        colname = f"Rel_{FBANDS[i]}_{ECHANNELS[j]}"
+                                        v = row[colname]
 
-                                    if j % 2 == 0:
-                                        # Even Number = Right Side
-                                        result_eeg = cv.rectangle(
-                                            result_eeg,
-                                            (vidcaphalfW+70, toppoint),
-                                            (vidcaphalfW+v+70, toppoint+FHEIGHT),
-                                            color, -1)
-                                    else:
-                                        # Odd Number = Left Side
-                                        result_eeg = cv.rectangle(
-                                            result_eeg,
-                                            (vidcaphalfW-v-70, toppoint),
-                                            (vidcaphalfW-70, toppoint+FHEIGHT),
-                                            color, -1)
+                                        if j % 2 == 0:
+                                            # Even Number = Right Side
+                                            result_eeg = cv.rectangle(
+                                                result_eeg,
+                                                (vidcaphalfW+70, toppoint),
+                                                (vidcaphalfW+v+70, toppoint+FHEIGHT),
+                                                color, -1)
+                                        else:
+                                            # Odd Number = Left Side
+                                            result_eeg = cv.rectangle(
+                                                result_eeg,
+                                                (vidcaphalfW-v-70, toppoint),
+                                                (vidcaphalfW-70, toppoint+FHEIGHT),
+                                                color, -1)
                                         
 
             # Write the final frame to the output video
@@ -213,6 +215,7 @@ if __name__ == "__main__":
 
     # OPTIONAL
     parser.add_argument('-ofs','--offset_seconds',help='How many seconds from the beginning should we initially ignore?', type=float, default=0)
+    parser.add_argument('-eeg', '--include_eeg', help='Should we include rendering the EEG?', action='store_true')
     parser.add_argument('-outf','--output_filename',help='The output filename, no extension needed', type=str, default='')
 
     args = parser.parse_args()
@@ -224,6 +227,7 @@ if __name__ == "__main__":
         args.output_dir, 
         
         offset_seconds=args.offset_seconds, 
+        include_eeg=args.include_eeg,
         video_output_filename=args.output_filename)
 
 """
