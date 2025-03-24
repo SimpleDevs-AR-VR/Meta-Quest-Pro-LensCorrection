@@ -120,6 +120,7 @@ def EstimateCursor(
     offset_frames = vidcapfps * offset_seconds
     vidcaphalfW = int(vidcapw/2)
     font = cv.FONT_HERSHEY_SIMPLEX
+    previous_rows = None
 
     # Loop!
     while success:
@@ -142,8 +143,11 @@ def EstimateCursor(
                 if check_int(conf_text):
                     # Get the eye rows that represent this frame
                     eye_rows = eye_df.loc[eye_df['frame'] == int(conf_text)]
-                    if not eye_rows.empty:
+                    if eye_rows.empty:
+                        eye_rows = previous_rows
+                    if eye_rows is not None and not eye_rows.empty:
                         # Iterate through rows, attempting to apply the correction matrix and pasting on to the screen
+                        previous_rows = eye_rows
                         for index, row in eye_rows.iterrows():
                             eye_pos_est = transform([row['screen_pos_x'], row['screen_pos_y']])
                             eye_pos = (int(eye_pos_est[0]), int(vidcaph-eye_pos_est[1])) # flip the Y
