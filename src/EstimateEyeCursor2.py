@@ -75,6 +75,7 @@ def EstimateCursor(
 
         offset_seconds:float = 0,
         include_eeg:bool = False,
+        save_frames:bool = False,
         video_output_filename:str = 'output',
         csv_output_filename:str = 'frames'):    
 
@@ -90,6 +91,11 @@ def EstimateCursor(
             print("Failed to delete %s. Reason: %s" % (filepath, e))
     if video_output_filename is None or len(video_output_filename)==0:
         video_output_filename = os.path.splitext(os.path.basename(video_filepath))[0]
+    
+    # The output dir should be empty. Now, if we want to save the raw frames, we create a folder just for that
+    save_frames_outdir = os.path.join(output_dir, 'frames/')
+    if save_frames: Path(save_frames_outdir).mkdir(parents=True, exist_ok=True)
+
     vid_eye_outpath = os.path.join(output_dir, video_output_filename+'_eye.avi')
     vid_eeg_outpath = os.path.join(output_dir, video_output_filename+'_eeg.avi')
 
@@ -122,6 +128,8 @@ def EstimateCursor(
     font = cv.FONT_HERSHEY_SIMPLEX
     previous_rows = None
 
+    output_rows = []
+
     # Loop!
     while success:
         # We check if count exceeds the provided offset, which is set to a default frame offset of 30
@@ -140,9 +148,10 @@ def EstimateCursor(
             if len(screen_text) > 0:
                 # Get the most confident text, which should be the clearest. Check if it's an integer
                 conf_text = screen_text[0][1]
-                if check_int(conf_text):
+                if check_int(conf_text): 
                     # Get the eye rows that represent this frame
-                    eye_rows = eye_df.loc[eye_df['frame'] == int(conf_text)]
+                    derived_frame_count = int(conf_text)
+                    eye_rows = eye_df.loc[eye_df['frame'] == derived_frame_count]
                     if eye_rows.empty:
                         eye_rows = previous_rows
                     if eye_rows is not None and not eye_rows.empty:
@@ -153,16 +162,23 @@ def EstimateCursor(
                             eye_pos = (int(eye_pos_est[0]), int(vidcaph-eye_pos_est[1])) # flip the Y
                             #result = cv.drawMarker(result, eye_pos, (255,0,0), cv.MARKER_CROSS, 20, 2)
                             # Print a rectangle to represent the estimated eye cursor
-                            result = cv.rectangle(
-                                result,
-                                (eye_pos[0] - 10, eye_pos[1] - 10),
-                                (eye_pos[0] + 10, eye_pos[1] + 10),
-                                (255,0,0), 3)
-                            result_eeg = cv.rectangle(
-                                result_eeg,
-                                (eye_pos[0] - 10, eye_pos[1] - 10),
-                                (eye_pos[0] + 10, eye_pos[1] + 10),
-                                (255,0,0), 3)
+                            minX = eye_pos[0] - 10
+                            minY = eye_pos[1] - 10
+                            maxX = eye_pos[0] + 10
+                            maxY = eye_pos[1] + 10
+                            result = cv.rectangle(result, (minX, minY), (maxX, maxY), (255,0,0), 3)
+                            result_eeg = cv.rectangle(result_eeg, (minX, minY), (maxX, maxY), (255,0,0), 3)
+                            
+                            if csv_output_filename is not None and len(csv_output_filename)>0:
+                                row['derived_frame'] = derived_frame_count
+                                row['confidence'] = screen_text[0][2]
+                                row['screen_x'] = eye_pos[0]
+                                row['screen_y'] = eye_pos[1]
+                                row['screen_minX'] = minX
+                                row['screen_minY'] = minY
+                                row['screen_maxX'] = maxX
+                                row['screen_maxY'] = maxY
+                                output_rows.append(row)
                             
                             # Print the Rel_AF7 and Rel_AF8, in a copy of result
                             if include_eeg:
@@ -193,7 +209,11 @@ def EstimateCursor(
                                                 (vidcaphalfW-v-70, toppoint),
                                                 (vidcaphalfW-70, toppoint+FHEIGHT),
                                                 color, -1)
-                                        
+
+                        # If we want to save the frame, we must save it under a custom output dir directory with the video
+                        if save_frames:
+                            frame_outname = os.path.join(save_frames_outdir, f'{derived_frame_count}.png')
+                            cv.imwrite(frame_outname, image)
 
             # Write the final frame to the output video
             out_eye.write(result)
@@ -208,6 +228,11 @@ def EstimateCursor(
     out_eye.release()
     out_eeg.release()
 
+    # If we're saving an output csv, and we can ensure that we have at least one output row, then we can print safely
+    if csv_output_filename is not None and len(csv_output_filename)>0 and len(output_rows)>0:
+        output_df = pd.concat(output_rows, ignore_index=False)
+        output_df.to_csv(csv_output_filename)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -220,7 +245,8 @@ if __name__ == "__main__":
     # OPTIONAL
     parser.add_argument('-ofs','--offset_seconds',help='How many seconds from the beginning should we initially ignore?', type=float, default=0)
     parser.add_argument('-eeg', '--include_eeg', help='Should we include rendering the EEG?', action='store_true')
-    parser.add_argument('-outf','--output_filename',help='The output filename, no extension needed', type=str, default='')
+    parser.add_argument('-sfs', '--save_frames',help='Should frames individually be saved?', action='store_true')
+    parser.add_argument('-outf','--output_filename',help='The output filename, no extension needed. This filename is relative to the declared output directory.', type=str, default='')
 
     args = parser.parse_args()
 
@@ -232,6 +258,7 @@ if __name__ == "__main__":
         
         offset_seconds=args.offset_seconds, 
         include_eeg=args.include_eeg,
+        save_frames=args.save_frames,
         video_output_filename=args.output_filename)
 
 """
