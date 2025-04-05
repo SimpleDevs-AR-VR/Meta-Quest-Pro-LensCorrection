@@ -119,8 +119,6 @@ def EstimateCursor(
     vidcapw  = int(vidcap.get(cv.CAP_PROP_FRAME_WIDTH))   # float `width`
     vidcaph = int(vidcap.get(cv.CAP_PROP_FRAME_HEIGHT))   # float `height`
     vidcapfps = int(vidcap.get(cv.CAP_PROP_FPS))          # FPS
-    out_eye = cv.VideoWriter(vid_eye_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
-    out_eeg = cv.VideoWriter(vid_eeg_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
     success, image = vidcap.read()
     count = 0
     offset_frames = vidcapfps * offset_seconds
@@ -128,7 +126,12 @@ def EstimateCursor(
     font = cv.FONT_HERSHEY_SIMPLEX
     previous_rows = None
 
-    output_rows = []
+    # Output streams. If we're printing EEG, we'll produce two videos. If not, just one video then.
+    out_eye = cv.VideoWriter(vid_eye_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
+    if include_eeg:
+        out_eeg = cv.VideoWriter(vid_eeg_outpath, cv.VideoWriter_fourcc('M','J','P','G'), vidcapfps, (vidcapw,vidcaph))
+
+    #output_rows = []
 
     # Loop!
     while success:
@@ -137,7 +140,8 @@ def EstimateCursor(
 
             # Make a copy of the frame
             result = np.copy(image)
-            result_eeg = np.copy(image)
+            if include_eeg:
+                result_eeg = np.copy(image)
 
             # Attempt to grayscale and apply threshold for easier frame processing
             gry = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
@@ -167,18 +171,19 @@ def EstimateCursor(
                             maxX = eye_pos[0] + 10
                             maxY = eye_pos[1] + 10
                             result = cv.rectangle(result, (minX, minY), (maxX, maxY), (255,0,0), 3)
-                            result_eeg = cv.rectangle(result_eeg, (minX, minY), (maxX, maxY), (255,0,0), 3)
+                            if include_eeg:
+                                result_eeg = cv.rectangle(result_eeg, (minX, minY), (maxX, maxY), (255,0,0), 3)
                             
-                            if csv_output_filename is not None and len(csv_output_filename)>0:
-                                row['derived_frame'] = derived_frame_count
-                                row['confidence'] = screen_text[0][2]
-                                row['screen_x'] = eye_pos[0]
-                                row['screen_y'] = eye_pos[1]
-                                row['screen_minX'] = minX
-                                row['screen_minY'] = minY
-                                row['screen_maxX'] = maxX
-                                row['screen_maxY'] = maxY
-                                output_rows.append(row)
+                            #if csv_output_filename is not None and len(csv_output_filename)>0:
+                            #    row['derived_frame'] = derived_frame_count
+                            #    row['confidence'] = screen_text[0][2]
+                            #    row['screen_x'] = eye_pos[0]
+                            #    row['screen_y'] = eye_pos[1]
+                            #    row['screen_minX'] = minX
+                            #    row['screen_minY'] = minY
+                            #    row['screen_maxX'] = maxX
+                            #    row['screen_maxY'] = maxY
+                            #    output_rows.append(row)
                             
                             # Print the Rel_AF7 and Rel_AF8, in a copy of result
                             if include_eeg:
@@ -217,7 +222,8 @@ def EstimateCursor(
 
             # Write the final frame to the output video
             out_eye.write(result)
-            out_eeg.write(result_eeg)
+            if include_eeg:
+                out_eeg.write(result_eeg)
 
         # Get the next frame
         success, image = vidcap.read()
@@ -226,12 +232,13 @@ def EstimateCursor(
     # Finally, close the video capture and output
     vidcap.release()
     out_eye.release()
-    out_eeg.release()
+    if include_eeg:
+        out_eeg.release()
 
     # If we're saving an output csv, and we can ensure that we have at least one output row, then we can print safely
-    if csv_output_filename is not None and len(csv_output_filename)>0 and len(output_rows)>0:
-        output_df = pd.concat(output_rows, ignore_index=False)
-        output_df.to_csv(csv_output_filename)
+    #if csv_output_filename is not None and len(csv_output_filename)>0 and len(output_rows)>0:
+    #    output_df = pd.concat(output_rows, ignore_index=False)
+    #    output_df.to_csv(csv_output_filename)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
